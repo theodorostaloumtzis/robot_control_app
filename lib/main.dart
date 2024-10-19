@@ -25,7 +25,7 @@ class ControlPage extends StatefulWidget {
 }
 
 class _ControlPageState extends State<ControlPage> {
-  String robotName = "selfbalancingrobot.local"; // mDNS name
+  String ipAddress = "192.168.47.240"; // Example IP
   String pitchAngle = "N/A";
   String pidOutput = "N/A";
   String kp = "0.0";
@@ -33,10 +33,12 @@ class _ControlPageState extends State<ControlPage> {
   String kd = "0.0";
   Timer? statusTimer;
 
+  TextEditingController ipController = TextEditingController(text: "192.168.0.100"); // Default IP example
+
   // Function to send motor commands to the ESP32
   Future<void> sendCommand(String command) async {
     try {
-      final url = Uri.http(robotName, "/command", {"command": command});
+      final url = Uri.http(ipAddress, "/command", {"command": command});
       final response = await http.get(url);
       if (response.statusCode == 200) {
         showMessage(response.body);
@@ -51,7 +53,7 @@ class _ControlPageState extends State<ControlPage> {
   // Function to fetch pitch angle and PID output
   Future<void> fetchStatus() async {
     try {
-      final url = Uri.http(robotName, "/status");
+      final url = Uri.http(ipAddress, "/status");
       final response = await http.get(url);
       if (response.statusCode == 200) {
         List<String> status = response.body.split('\n');
@@ -74,7 +76,7 @@ class _ControlPageState extends State<ControlPage> {
   // Function to set individual PID values
   Future<void> setPidValue(String type, String value) async {
     try {
-      final url = Uri.http(robotName, "/set_pid", {type: value});
+      final url = Uri.http(ipAddress, "/set_pid", {type: value});
       final response = await http.get(url); // Use GET for setting individual PID
       if (response.statusCode == 200) {
         showMessage("PID $type set to $value");
@@ -122,7 +124,36 @@ class _ControlPageState extends State<ControlPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text('Robot Name: $robotName'),
+            // IP Address Input Field
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: ipController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Enter IP Address',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      ipAddress = value; // Update IP address as the user types
+                    },
+                  ),
+                ),
+                SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      ipAddress = ipController.text; // Set the IP address when button is pressed
+                    });
+                    showMessage('IP Address set to $ipAddress');
+                  },
+                  child: Text('Set IP'),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            Text('Robot IP: $ipAddress'),
             SizedBox(height: 20),
             // PID Controls
             buildPidControl('Kp', (value) {
